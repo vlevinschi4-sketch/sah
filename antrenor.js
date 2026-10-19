@@ -1,13 +1,13 @@
 // antrenor.js — antrenorul: exerciții din greșelile tale, baza de exerciții (partidele tale + Lichess),
 // lecții pe deschidere, mijloc și final, și finaluri jucate contra Stockfish.
-import { Chess } from "./chess.js";
-import * as A from "./analiza.js";
-import { S, culoareaMea, rezultat, asiguraGreseli, incarcaExercitii, statEx, inregistreazaEx, evalMotor, numeDeschidere } from "./stare.js";
-import { TablaUI } from "./tablaui.js";
-import { iconSVG, sageata, CULORI, tablaSVG } from "./tabla.js";
-import { LECTII, FINALURI, SECTIUNI, TEME_RO, TEME_LICHESS, TEME_DIN_TIP, FAZA_TEMA } from "./lectii.js";
-import { sunetMutare, sunetCorect, sunetGresit } from "./sunete.js";
-import { $, $$, esc, af, fig, figText, toast, ico, dataRo } from "./util.js";
+import { Chess } from "./chess.js?v=31";
+import * as A from "./analiza.js?v=31";
+import { S, culoareaMea, rezultat, asiguraGreseli, incarcaExercitii, statEx, inregistreazaEx, evalMotor, numeDeschidere } from "./stare.js?v=31";
+import { TablaUI } from "./tablaui.js?v=31";
+import { iconSVG, sageata, CULORI, tablaSVG } from "./tabla.js?v=31";
+import { LECTII, FINALURI, SECTIUNI, TEME_RO, TEME_LICHESS, TEME_DIN_TIP, FAZA_TEMA } from "./lectii.js?v=31";
+import { sunetMutare, sunetCorect, sunetGresit } from "./sunete.js?v=31";
+import { $, $$, esc, af, fig, figText, toast, ico, dataRo } from "./util.js?v=31";
 
 let T = null;          // tabla interactivă a ecranului curent
 let Q = null;          // sesiunea de exerciții în curs
@@ -430,7 +430,7 @@ async function raspunsMotor() {
 async function gataFinal(ok, text) {
   F.stare = "gata"; F.ok = ok; F.text = text; T.set({ interactiv: false });
   if (S.set.sunete) setTimeout(ok ? sunetCorect : sunetGresit, 120);
-  if (ok) { S.set.finaluri = { ...(S.set.finaluri || {}), [F.f.id]: true }; const { salveazaSetari } = await import("./date.js"); salveazaSetari(S.set); }
+  if (ok) { S.set.finaluri = { ...(S.set.finaluri || {}), [F.f.id]: true }; const { salveazaSetari } = await import("./date.js?v=31"); salveazaSetari(S.set); }
   coachFinal();
 }
 function coachFinal() {

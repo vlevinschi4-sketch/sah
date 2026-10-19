@@ -1,13 +1,7 @@
 // sw.js — păstrează aplicația și motorul pe dispozitiv, ca să meargă și fără internet.
-// Cu internet ia mereu fișierele proaspete; fără internet folosește copia salvată.
-const VERSIUNE = "sah-local-v3";
-const FISIERE = [
-  "./", "index.html", "manifest.webmanifest", "css/app.css",
-  "js/app.js", "js/review.js", "js/stare.js", "js/util.js", "js/sunete.js", "js/analiza.js", "js/motor.js", "js/date.js", "js/tabla.js", "js/chess.js",
-  "js/tablaui.js", "js/antrenor.js", "js/deschideri.js", "js/lectii.js",
-  "engine/stockfish-19-lite-single.js", "engine/stockfish-19-lite-single.wasm",
-  "data/teorie.json", "data/exercitii.json", "data/deschideri.json", "data/repertoriu.json", "icons/icon-192.png", "icons/icon-512.png", "icons/apple-touch-icon.png",
-];
+// Cu internet ia mereu fișierele proaspete (fără cache vechi); fără internet folosește copia salvată.
+const VERSIUNE = "sah-local-v31";
+const FISIERE = ["./", "index.html", "manifest.webmanifest", "analiza.js", "antrenor.js", "app.css", "app.js", "apple-touch-icon.png", "chess.js", "date.js", "deschideri.js", "deschideri.json", "exercitii.json", "icon-192.png", "icon-512-maskable.png", "icon-512.png", "lectii.js", "motor.js", "repertoriu.json", "review.js", "stare.js", "stockfish-19-lite-single.js", "stockfish-19-lite-single.wasm", "sunete.js", "tabla.js", "tablaui.js", "teorie.json", "util.js"];
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(VERSIUNE).then(c => c.addAll(FISIERE)).then(() => self.skipWaiting()));
 });
@@ -16,13 +10,13 @@ self.addEventListener("activate", e => {
 });
 self.addEventListener("fetch", e => {
   const url = new URL(e.request.url);
-  if (e.request.method !== "GET" || url.origin !== location.origin) return; // Chess.com merge direct la rețea
-  const motor = url.pathname.includes("/engine/");
-  if (motor) { // motorul e mare și nu se schimbă: întâi din copie
-    e.respondWith(caches.match(e.request).then(r => r || fetch(e.request)));
+  if (e.request.method !== "GET" || url.origin !== location.origin) return; // Chess.com și Lichess merg direct la rețea
+  if (url.pathname.includes("stockfish-19")) { // motorul e mare și nu se schimbă: întâi din copie
+    e.respondWith(caches.match(e.request, { ignoreSearch: true }).then(r => r || fetch(e.request)));
     return;
   }
-  e.respondWith(fetch(e.request).then(resp => {
+  const cerere = e.request.mode === "navigate" ? fetch(e.request) : fetch(e.request.url, { cache: "no-cache", credentials: "same-origin" });
+  e.respondWith(cerere.then(resp => {
     if (resp.ok) { const copie = resp.clone(); caches.open(VERSIUNE).then(c => c.put(e.request, copie)); }
     return resp;
   }).catch(() => caches.match(e.request, { ignoreSearch: true }).then(r => r || caches.match("index.html"))));

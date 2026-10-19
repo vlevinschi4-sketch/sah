@@ -1,8 +1,8 @@
 // stare.js — starea comună a aplicației și analiza unei partide.
-import * as A from "./analiza.js";
-import { GrupMotoare, MotorLive } from "./motor.js";
-import { db, salveazaSetari } from "./date.js";
-import { MOTIV } from "./util.js";
+import * as A from "./analiza.js?v=31";
+import { GrupMotoare, MotorLive } from "./motor.js?v=31";
+import { db, salveazaSetari } from "./date.js?v=31";
+import { MOTIV } from "./util.js?v=31";
 
 export const S = { set: null, partide: [], teorie: null, filtru: "toate", lot: null, motoare: null, live: null, ruleaza: Promise.resolve() };
 
@@ -92,7 +92,7 @@ let _ex = null;
 export async function incarcaExercitii() {
   if (_ex) return _ex;
   try {
-    const d = await (await fetch("data/exercitii.json")).json();
+    const d = await (await fetch("exercitii.json?v=31")).json();
     _ex = d.map(x => ({ id: "p-" + x[0], sursa: "partide", fen: x[1], ult: x[2], sol: x[3].split(" "), r: x[4], teme: x[5].split(" "), info: { url: x[6] } }));
   } catch (e) { _ex = []; }
   return _ex;

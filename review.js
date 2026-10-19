@@ -1,14 +1,14 @@
 // review.js — Game Review, după modelul Chess.com: rezumat, antrenor mutare cu mutare,
 // cea mai bună mutare, continuarea, „Încearcă din nou”, momente cheie și explorare liberă
 // cu Stockfish live (muți tu orice piesă și vezi evaluarea și continuarea).
-import { Chess } from "./chess.js";
-import * as A from "./analiza.js";
-import { S, culoareaMea, rezultat, motorLive, analizeaza, inSerie, numeDeschidere, familie } from "./stare.js";
-import { db, salveazaSetari } from "./date.js";
-import { tablaSVG, iconSVG, baraEval, sageata, patratLa, CULORI, idPiesa } from "./tabla.js";
-import { sunetMutare, sunetGresit, sunetCorect, deblocheaza } from "./sunete.js";
-import { $, $$, esc, af, fig, figText, nrMut, evFmt, mmss, reducedMotion, dataRo, toast, tip, timp, evScurt, ico } from "./util.js";
-import { sesiuneDinPartida } from "./antrenor.js";
+import { Chess } from "./chess.js?v=31";
+import * as A from "./analiza.js?v=31";
+import { S, culoareaMea, rezultat, motorLive, analizeaza, inSerie, numeDeschidere, familie } from "./stare.js?v=31";
+import { db, salveazaSetari } from "./date.js?v=31";
+import { tablaSVG, iconSVG, baraEval, sageata, patratLa, CULORI, idPiesa } from "./tabla.js?v=31";
+import { sunetMutare, sunetGresit, sunetCorect, deblocheaza } from "./sunete.js?v=31";
+import { $, $$, esc, af, fig, figText, nrMut, evFmt, mmss, reducedMotion, dataRo, toast, tip, timp, evScurt, ico } from "./util.js?v=31";
+import { sesiuneDinPartida } from "./antrenor.js?v=31";
 
 const ERR = ["in", "mi", "ms", "bl"], CHEIE = ["br", "gr", "mi", "ms", "bl"];
 const ADV = [["opening", "Deschidere"], ["tactics", "Combinații tactice"], ["strategy", "Strategie"], ["endgame", "Finaluri"]];

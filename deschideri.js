@@ -1,13 +1,13 @@
 // deschideri.js — baza de deschideri: toate liniile din teorie (Lichess, 3865), repertoriul tău cu idei și capcane,
 // ce joci tu în partide, plus ecranul de studiu: pas cu pas, Stockfish live, variante proprii și exersarea liniei.
-import { Chess } from "./chess.js";
-import * as A from "./analiza.js";
-import { S, culoareaMea, rezultat, numeDeschidere, motorLive, evalMotor } from "./stare.js";
-import { db, salveazaSetari } from "./date.js";
-import { TablaUI } from "./tablaui.js";
-import { sageata, CULORI, iconSVG } from "./tabla.js";
-import { sunetMutare, sunetCorect, sunetGresit } from "./sunete.js";
-import { $, $$, esc, fig, figText, toast, ico, dataRo, nrMut } from "./util.js";
+import { Chess } from "./chess.js?v=31";
+import * as A from "./analiza.js?v=31";
+import { S, culoareaMea, rezultat, numeDeschidere, motorLive, evalMotor } from "./stare.js?v=31";
+import { db, salveazaSetari } from "./date.js?v=31";
+import { TablaUI } from "./tablaui.js?v=31";
+import { sageata, CULORI, iconSVG } from "./tabla.js?v=31";
+import { sunetMutare, sunetCorect, sunetGresit } from "./sunete.js?v=31";
+import { $, $$, esc, fig, figText, toast, ico, dataRo, nrMut } from "./util.js?v=31";
 
 const START = new Chess().fen();
 let D = null, T = null, L = null;
@@ -18,7 +18,7 @@ const ECO = [["", "Toate"], ["A", "A · flanc"], ["B", "B · semi-deschise"], ["
 
 async function date() {
   if (!D) {
-    const [toate, rep] = await Promise.all([fetch("data/deschideri.json").then(r => r.json()), fetch("data/repertoriu.json").then(r => r.json())]);
+    const [toate, rep] = await Promise.all([fetch("deschideri.json?v=31").then(r => r.json()), fetch("repertoriu.json?v=31").then(r => r.json())]);
     const fams = new Map();
     toate.forEach(([eco, nume, san], i) => { const f = fam(nume); if (!fams.has(f)) fams.set(f, []); fams.get(f).push(i); });
     D = { toate, rep, fams };
