@@ -1,7 +1,7 @@
 // tablaui.js — tablă interactivă refolosibilă (exerciții, deschideri, finaluri): muți atingând sau trăgând piesa.
-import { Chess } from "./chess.js?v=31";
-import { tablaSVG, patratLa, idPiesa } from "./tabla.js?v=31";
-import { deblocheaza } from "./sunete.js?v=31";
+import { Chess } from "./chess.js?v=32";
+import { tablaSVG, patratLa, idPiesa } from "./tabla.js?v=32";
+import { deblocheaza } from "./sunete.js?v=32";
 
 export class TablaUI {
   constructor(el, { onMutare } = {}) {

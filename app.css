@@ -331,3 +331,19 @@ body.in-partida main { max-width:1240px; padding-top:calc(env(safe-area-inset-to
 @media (max-width:560px) { .faze { grid-template-columns:1fr } .faza { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; column-gap:10px }
   .faza .eyebrow { grid-column:1 } .faza b { grid-column:2; grid-row:1 / span 2; font-size:24px } .faza .sub { grid-column:1 } .faza .btn { grid-column:1 / -1; justify-self:start } }
 @media (max-width:760px) { .tabbar { background:color-mix(in srgb, var(--surface) 86%, transparent) } }
+
+/* ───────── v3.2: fără zoom la apăsări repetate, navigare mare pe toată lățimea ───────── */
+html { touch-action:manipulation; -webkit-tap-highlight-color:transparent }
+button, a, .btn, .chip, .mm, .lm, .kn, .row, .seg button, .nav { touch-action:manipulation; -webkit-user-select:none; user-select:none }
+.nav { display:flex; align-items:stretch; justify-content:stretch; gap:10px; width:100%; max-width:none; margin:10px 0 0; padding:8px; border-radius:24px }
+.nav .btn, .nav .btn.icon { flex:1 1 0; width:auto; min-width:0; height:56px; min-height:56px; padding:0; border-radius:17px }
+.nav .btn svg { width:26px; height:26px }
+.nav .btn[data-n="prev"], .nav .btn[data-n="next"] { flex:1.7 1 0 }
+.nav .btn[data-n="next"] { color:#fff; background:color-mix(in srgb, var(--accent) 86%, transparent); border-color:rgba(255,255,255,.35) }
+.nav .sep { display:none }
+@media (max-width:900px) {
+  .nav { position:fixed; left:max(10px, env(safe-area-inset-left,0px)); right:max(10px, env(safe-area-inset-right,0px)); width:auto; transform:none;
+    bottom:calc(env(safe-area-inset-bottom,0px) + 10px); margin:0; z-index:35 }
+  body.in-partida main { padding-bottom:calc(env(safe-area-inset-bottom,0px) + 100px) }
+}
+@media (max-width:900px) { .nav { background:color-mix(in srgb, var(--surface) 90%, transparent) } }

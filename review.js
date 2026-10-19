@@ -1,14 +1,14 @@
 // review.js — Game Review, după modelul Chess.com: rezumat, antrenor mutare cu mutare,
 // cea mai bună mutare, continuarea, „Încearcă din nou”, momente cheie și explorare liberă
 // cu Stockfish live (muți tu orice piesă și vezi evaluarea și continuarea).
-import { Chess } from "./chess.js?v=31";
-import * as A from "./analiza.js?v=31";
-import { S, culoareaMea, rezultat, motorLive, analizeaza, inSerie, numeDeschidere, familie } from "./stare.js?v=31";
-import { db, salveazaSetari } from "./date.js?v=31";
-import { tablaSVG, iconSVG, baraEval, sageata, patratLa, CULORI, idPiesa } from "./tabla.js?v=31";
-import { sunetMutare, sunetGresit, sunetCorect, deblocheaza } from "./sunete.js?v=31";
-import { $, $$, esc, af, fig, figText, nrMut, evFmt, mmss, reducedMotion, dataRo, toast, tip, timp, evScurt, ico } from "./util.js?v=31";
-import { sesiuneDinPartida } from "./antrenor.js?v=31";
+import { Chess } from "./chess.js?v=32";
+import * as A from "./analiza.js?v=32";
+import { S, culoareaMea, rezultat, motorLive, analizeaza, inSerie, numeDeschidere, familie } from "./stare.js?v=32";
+import { db, salveazaSetari } from "./date.js?v=32";
+import { tablaSVG, iconSVG, baraEval, sageata, patratLa, CULORI, idPiesa } from "./tabla.js?v=32";
+import { sunetMutare, sunetGresit, sunetCorect, deblocheaza } from "./sunete.js?v=32";
+import { $, $$, esc, af, fig, figText, nrMut, evFmt, mmss, reducedMotion, dataRo, toast, tip, timp, evScurt, ico } from "./util.js?v=32";
+import { sesiuneDinPartida } from "./antrenor.js?v=32";
 
 const ERR = ["in", "mi", "ms", "bl"], CHEIE = ["br", "gr", "mi", "ms", "bl"];
 const ADV = [["opening", "Deschidere"], ["tactics", "Combinații tactice"], ["strategy", "Strategie"], ["endgame", "Finaluri"]];
@@ -467,8 +467,15 @@ function verificaRetry(mv, u) {
 
 // ───────── panoul „Analiză” (antrenorul, liniile motorului, lista de mutări) ─────────
 function randeazaAnaliza() {
-  $("#panou").className = "analiza";
-  $("#panou").innerHTML = `
+  // structura panoului se construiește o singură dată; la fiecare mutare se actualizează doar conținutul,
+  // ca pagina să nu sară (pe iPhone părea că face zoom)
+  const panou = $("#panou");
+  if (panou.classList.contains("analiza") && $("#coach", panou)) {
+    randeazaCoach(); randeazaVarianta(); randeazaLinii(); randeazaGrafic(true); randeazaLista();
+    return;
+  }
+  panou.className = "analiza";
+  panou.innerHTML = `
     <div class="antrenor mut" id="coach"></div>
     <div id="varianta"></div>
     <div class="linii" id="linii"></div>
@@ -543,7 +550,7 @@ function randeazaCoach() {
       const st = statDeschidere(p.desch || desch);
       if (st) corp += `<p class="sub">Ai jucat ${esc(st.fam)} de ${st.n} ${st.n === 1 ? "dată" : "ori"}: ${st.v} victorii, ${st.r} remize, ${st.i} înfrângeri.</p>`;
     }
-    if (p.amS && /[x+#]/.test(p.amS) && !ERR.includes(p.cl)) corp += `<p class="risc">Atenție: ${p.cul === R.eu ? "adversarul" : "tu"} poate juca ${fig(p.amS)}.</p>`;
+    if (p.amS && /[x+#]/.test(p.amS) && !ERR.includes(p.cl)) corp += `<p class="risc">Atenție: ${p.cul === R.eu ? "adversarul poate" : "poți"} juca ${fig(p.amS)}.</p>`;
     const cx = [];
     if (p.a != null && p.cl !== "bk") cx.push(`Precizie ${p.a}%`);
     if (S.set.timpMutare && p.t != null) cx.push(`Gândit ${String(p.t).replace(".", ",")} s`);

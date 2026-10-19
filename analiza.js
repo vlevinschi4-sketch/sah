@@ -1,7 +1,7 @@
 // analiza.js — clasificarea mutărilor (ca în Game Review de pe Chess.com), acuratețe,
 // rating estimat și statistici avansate. Primește evaluările brute ale motorului
 // pentru fiecare poziție și întoarce tot ce afișează aplicația.
-import { Chess } from "./chess.js?v=31";
+import { Chess } from "./chess.js?v=32";
 
 export const VAL = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 };
 export const NUME = { p: "pionul", n: "calul", b: "nebunul", r: "turnul", q: "dama", k: "regele" };
