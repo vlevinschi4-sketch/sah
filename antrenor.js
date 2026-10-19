@@ -1,13 +1,13 @@
 // antrenor.js — antrenorul: exerciții din greșelile tale, baza de exerciții (partidele tale + Lichess),
 // lecții pe deschidere, mijloc și final, și finaluri jucate contra Stockfish.
-import { Chess } from "./chess.js?v=32";
-import * as A from "./analiza.js?v=32";
-import { S, culoareaMea, rezultat, asiguraGreseli, incarcaExercitii, statEx, inregistreazaEx, evalMotor, numeDeschidere } from "./stare.js?v=32";
-import { TablaUI } from "./tablaui.js?v=32";
-import { iconSVG, sageata, CULORI, tablaSVG } from "./tabla.js?v=32";
-import { LECTII, FINALURI, SECTIUNI, TEME_RO, TEME_LICHESS, TEME_DIN_TIP, FAZA_TEMA } from "./lectii.js?v=32";
-import { sunetMutare, sunetCorect, sunetGresit } from "./sunete.js?v=32";
-import { $, $$, esc, af, fig, figText, toast, ico, dataRo } from "./util.js?v=32";
+import { Chess } from "./chess.js?v=33";
+import * as A from "./analiza.js?v=33";
+import { S, culoareaMea, rezultat, asiguraGreseli, incarcaExercitii, statEx, inregistreazaEx, evalMotor, numeDeschidere } from "./stare.js?v=33";
+import { TablaUI } from "./tablaui.js?v=33";
+import { iconSVG, sageata, CULORI, tablaSVG } from "./tabla.js?v=33";
+import { LECTII, FINALURI, SECTIUNI, TEME_RO, TEME_LICHESS, TEME_DIN_TIP, FAZA_TEMA } from "./lectii.js?v=33";
+import { sunetMutare, sunetCorect, sunetGresit } from "./sunete.js?v=33";
+import { $, $$, esc, af, fig, figText, toast, ico, dataRo } from "./util.js?v=33";
 
 let T = null;          // tabla interactivă a ecranului curent
 let Q = null;          // sesiunea de exerciții în curs
@@ -197,8 +197,11 @@ export async function randeazaExercitii(el) {
 }
 
 // ───────── sesiunea de exerciții ─────────
-export function pornesteSesiune(lista, titlu) {
-  Q = { lista, titlu, i: 0, rez: [], dRating: 0, ratingStart: ratingInitial().rating };
+// Q.ist = pozițiile exercițiului curent (start, după mutarea adversarului, după fiecare mutare jucată);
+// Q.vi = poziția la care te uiți cu ‹ › (null = poziția de acum, în care muți).
+// Reluarea unui exercițiu nu mai schimbă ratingul: contează doar prima încercare.
+export function pornesteSesiune(lista, titlu, exersare = false) {
+  Q = { lista, titlu, i: 0, rez: [], inreg: [], dRating: 0, ratingStart: ratingInitial().rating, exersare };
   if (location.hash === "#sesiune") randeazaSesiune($("#ecran-antrenor")); else location.hash = "sesiune";
 }
 export function randeazaSesiune(el) {
@@ -206,7 +209,14 @@ export function randeazaSesiune(el) {
   if (!Q) { location.hash = "antrenor"; return; }
   sus();
   el.innerHTML = `<div class="rv sesiune">
-      <div class="rv-st"><div class="tabla-rand singur"><div id="tbx"></div></div></div>
+      <div class="rv-st"><div class="tabla-rand singur"><div id="tbx"></div></div>
+        <div class="nav glass" id="ex-nav">
+          <button class="btn glass icon" data-n="first" aria-label="Poziția de început">${ico("first", 22)}</button>
+          <button class="btn glass icon" data-n="prev" aria-label="Mutarea anterioară">${ico("prev", 22)}</button>
+          <button class="btn glass icon" data-n="reia" aria-label="Fă exercițiul din nou">${ico("sync", 22)}</button>
+          <button class="btn glass icon" data-n="next" aria-label="Mutarea următoare">${ico("next", 22)}</button>
+          <button class="btn glass icon" data-n="last" aria-label="Poziția de acum">${ico("last", 22)}</button>
+        </div></div>
       <aside class="rv-dr">
         <div class="rv-cap"><button class="btn glass icon" id="b-iesi" aria-label="Înapoi">${ico("back", 20)}</button>
           <div class="rv-titlu"><b>${esc(Q.titlu)}</b><span id="ex-prog"></span></div></div>
@@ -214,30 +224,84 @@ export function randeazaSesiune(el) {
         <div class="antrenor mut" id="ex-coach"></div>
       </aside></div>`;
   $("#b-iesi").onclick = () => { location.hash = "antrenor"; };
+  $("#ex-nav").onclick = e => { const b = e.target.closest("[data-n]"); if (b) navEx(b.dataset.n); };
   T = new TablaUI($("#tbx"), { onMutare: m => mutareEx(m) });
+  addEventListener("keydown", tastaEx);
   incarcaEx();
 }
+function tastaEx(e) {
+  if (!Q || !$("#ex-nav")) { removeEventListener("keydown", tastaEx); return; }
+  const n = { ArrowLeft: "prev", ArrowRight: "next", ArrowUp: "first", ArrowDown: "last" }[e.key];
+  if (n) { e.preventDefault(); navEx(n); }
+}
 function puncte() {
-  $("#puncte").innerHTML = Q.lista.map((e, k) => `<span class="pt ${Q.rez[k] === true ? "ok" : Q.rez[k] === false ? "nu" : k === Q.i ? "acum" : ""}"></span>`).join("");
-  $("#ex-prog").textContent = Q.i < Q.lista.length ? `Exercițiul ${Q.i + 1} din ${Q.lista.length} · rating ${ratingInitial().rating}` : "Gata";
+  $("#puncte").innerHTML = Q.lista.map((e, k) => `<button class="pt ${Q.rez[k] === true ? "ok" : Q.rez[k] === false ? "nu" : ""} ${k === Q.i && Q.e ? "acum" : ""}" data-k="${k}" aria-label="Exercițiul ${k + 1}" ${Q.rez[k] === undefined && k !== Q.i ? "disabled" : ""}></button>`).join("");
+  $("#puncte").onclick = ev => { const b = ev.target.closest("[data-k]"); if (b && !b.disabled && +b.dataset.k !== Q.i) { Q.i = +b.dataset.k; incarcaEx(); } };
+  const reluare = Q.reluare;
+  $("#ex-prog").textContent = Q.e ? `Exercițiul ${Q.i + 1} din ${Q.lista.length}${reluare ? " · reluare, fără rating" : ` · rating ${ratingInitial().rating}`}` : "Gata";
 }
 function incarcaEx() {
   if (Q.i >= Q.lista.length) return rezumatSesiune();
   const e = Q.lista[Q.i];
   const ch = new Chess(e.fen);
   const juc = e.ult ? (ch.turn() === "w" ? "b" : "w") : ch.turn();
-  Object.assign(Q, { e, pas: 0, pos: e.fen, stare: "arata", erori: 0, hint: 0, ajutor: false, juc });
+  Object.assign(Q, { e, pas: 0, pos: e.fen, stare: "arata", erori: 0, hint: 0, ajutor: false, juc, ist: [{ fen: e.fen, u: null }], vi: null, ultimD: 0,
+    reluare: !!(Q.inreg[Q.i] || Q.exersare) });
   T.set({ fen: e.fen, flip: juc === "b", arrows: [], hl: [], badge: null, interactiv: false, cine: juc });
   puncte(); coachEx();
-  const start = () => { Q.stare = "muta"; T.set({ interactiv: true }); coachEx(); };
+  const start = () => { Q.stare = "muta"; arataPoz(); coachEx(); };
   if (e.ult) setTimeout(() => { if (!Q || Q.e !== e) return; aplica(e.ult, true); start(); }, 650);
   else start();
+}
+// desenează poziția la care te uiți (din istoric sau cea de acum)
+function arataPoz(o = {}) {
+  const live = Q.vi == null;
+  const k = live ? Q.ist.length - 1 : Q.vi, p = Q.ist[k];
+  const hl = p.u ? [{ sq: p.u.slice(0, 2), c: "#e8c547", o: .32 }, { sq: p.u.slice(2, 4), c: "#e8c547", o: .45 }] : [];
+  let arrows = [];
+  if (live && Q.stare === "muta" && Q.hint) {
+    const u = Q.e.sol[Q.pas];
+    if (Q.hint === 1) hl.push({ sq: u.slice(0, 2), c: CULORI.rec, o: .55 }); else arrows = [sageata(u, CULORI.be, .8)];
+  }
+  T.set({ fen: p.fen, hl, arrows, badge: o.badge || null, interactiv: live && Q.stare === "muta" });
+  const nav = $("#ex-nav");
+  if (nav) {
+    $("[data-n=prev]", nav).disabled = $("[data-n=first]", nav).disabled = k === 0;
+    $("[data-n=next]", nav).disabled = $("[data-n=last]", nav).disabled = live;
+    $("[data-n=reia]", nav).disabled = false;
+  }
+}
+function navEx(n) {
+  if (!Q || !Q.e) return;
+  if (n === "reia") return reiaEx();
+  if (Q.stare === "arata" || Q.stare === "raspunde" || Q.stare === "solutie" || Q.stare === "gresit") return;
+  const ultim = Q.ist.length - 1;
+  let k = Q.vi == null ? ultim : Q.vi;
+  if (n === "first") k = 0;
+  if (n === "prev") k = Math.max(0, k - 1);
+  if (n === "next") k = Math.min(ultim, k + 1);
+  if (n === "last") k = ultim;
+  const vechi = Q.vi;
+  Q.vi = k === ultim ? null : k;
+  if (vechi === Q.vi) return;
+  arataPoz();
+  if (n === "next" || n === "last") { const p = Q.ist[k]; if (p.u && S.set.sunete) sunetMutare(new Chess(Q.ist[k - 1].fen).move({ from: p.u.slice(0, 2), to: p.u.slice(2, 4), promotion: p.u[4] }).san); }
+  coachEx();
+}
+async function reiaEx() {
+  if (!Q || !Q.e || Q.stare === "solutie") return;
+  // dacă prima încercare a fost deja greșită, o înregistrăm acum (ratingul ține cont doar de prima încercare)
+  if (Q.rez[Q.i] !== undefined && !Q.inreg[Q.i] && !Q.exersare) {
+    const d = await inregistreazaEx(Q.e, Q.rez[Q.i]); Q.dRating += d; Q.inreg[Q.i] = true;
+  }
+  if (Q.rez[Q.i] !== undefined && !Q.inreg[Q.i]) Q.inreg[Q.i] = true;
+  incarcaEx();
 }
 function aplica(u, sunet) {
   const ch = new Chess(Q.pos);
   const m = ch.move({ from: u.slice(0, 2), to: u.slice(2, 4), promotion: u[4] });
-  Q.pos = ch.fen();
-  T.set({ fen: Q.pos, hl: [{ sq: m.from, c: "#e8c547", o: .32 }, { sq: m.to, c: "#e8c547", o: .45 }], badge: null, arrows: [] });
+  Q.pos = ch.fen(); Q.ist.push({ fen: Q.pos, u: m.from + m.to + (m.promotion || "") }); Q.vi = null;
+  arataPoz();
   if (sunet && S.set.sunete) sunetMutare(m.san);
   return m;
 }
@@ -249,93 +313,113 @@ function eCorecta(m) {
   return false;
 }
 async function mutareEx(m) {
-  if (!Q || Q.stare !== "muta") return;
+  if (!Q || Q.stare !== "muta" || Q.vi != null) return;
   if (eCorecta(m)) {
-    Q.pos = m.fen; Q.pas++;
+    Q.pos = m.fen; Q.pas++; Q.ist.push({ fen: m.fen, u: m.u });
     T.set({ fen: m.fen, hl: [{ sq: m.from, c: CULORI.be, o: .3 }, { sq: m.to, c: CULORI.be, o: .45 }], badge: { sq: m.to, cl: "be" }, arrows: [] });
     if (S.set.sunete) sunetMutare(m.san);
     if (Q.pas >= Q.e.sol.length) return rezolvat(true);
     Q.stare = "raspunde"; T.set({ interactiv: false }); coachEx("bine");
-    setTimeout(() => { if (!Q || Q.stare !== "raspunde") return; aplica(Q.e.sol[Q.pas], true); Q.pas++; Q.stare = "muta"; T.set({ interactiv: true }); coachEx(); }, 550);
+    setTimeout(() => { if (!Q || Q.stare !== "raspunde") return; Q.stare = "muta"; aplica(Q.e.sol[Q.pas], true); Q.pas++; arataPoz(); coachEx(); }, 550);
   } else {
     Q.erori++;
     if (Q.rez[Q.i] === undefined) Q.rez[Q.i] = false;
-    T.set({ fen: m.fen, hl: [{ sq: m.from, c: CULORI.bl, o: .3 }, { sq: m.to, c: CULORI.bl, o: .45 }], badge: { sq: m.to, cl: "bl" }, interactiv: false });
+    T.set({ fen: m.fen, hl: [{ sq: m.from, c: CULORI.bl, o: .3 }, { sq: m.to, c: CULORI.bl, o: .45 }], badge: { sq: m.to, cl: "bl" }, interactiv: false, arrows: [] });
     if (S.set.sunete) { sunetMutare(m.san); setTimeout(sunetGresit, 120); }
     Q.stare = "gresit"; coachEx("gresit");
     puncte();
-    setTimeout(() => { if (!Q || Q.stare !== "gresit") return; T.set({ fen: Q.pos, hl: [], badge: null, interactiv: true }); Q.stare = "muta"; if (Q.erori >= 2 && !Q.hint) arataIndiciu(); coachEx(); }, 900);
+    setTimeout(() => { if (!Q || Q.stare !== "gresit") return; Q.stare = "muta"; if (Q.erori >= 2 && !Q.hint) { Q.hint = 1; Q.ajutor = true; } arataPoz(); coachEx(); }, 900);
   }
 }
 function arataIndiciu() {
-  const u = Q.e.sol[Q.pas]; Q.hint++; Q.ajutor = true;
+  Q.hint = Math.min(2, Q.hint + 1); Q.ajutor = true;
   if (Q.rez[Q.i] === undefined) Q.rez[Q.i] = false;
-  if (Q.hint === 1) T.set({ hl: [{ sq: u.slice(0, 2), c: CULORI.rec, o: .55 }] });
-  else T.set({ arrows: [sageata(u, CULORI.be, .8)] });
-  coachEx(); puncte();
+  Q.vi = null; arataPoz(); coachEx(); puncte();
 }
 async function arataSolutia() {
   if (Q.rez[Q.i] === undefined) Q.rez[Q.i] = false;
-  Q.stare = "solutie"; T.set({ interactiv: false });
+  Q.vi = null; Q.stare = "solutie"; T.set({ interactiv: false });
   while (Q && Q.stare === "solutie" && Q.pas < Q.e.sol.length) { aplica(Q.e.sol[Q.pas], true); Q.pas++; await new Promise(r => setTimeout(r, 700)); }
   if (Q) rezolvat(false);
 }
 async function rezolvat(deUnul) {
   const ok = deUnul && Q.erori === 0 && !Q.ajutor;
+  const reluare = Q.reluare || Q.inreg[Q.i];
   if (Q.rez[Q.i] === undefined) Q.rez[Q.i] = ok;
-  Q.stare = "gata"; T.set({ interactiv: false });
+  Q.stare = "gata"; Q.okAcum = ok; Q.vi = null; arataPoz({ badge: deUnul ? T.st.badge : null });
   if (deUnul && S.set.sunete) setTimeout(sunetCorect, 150);
-  const d = await inregistreazaEx(Q.e, Q.rez[Q.i]);
-  Q.dRating += d; Q.ultimD = d;
+  Q.ultimD = 0;
+  if (!reluare) { const d = await inregistreazaEx(Q.e, Q.rez[Q.i]); Q.dRating += d; Q.ultimD = d; Q.inreg[Q.i] = true; }
   puncte(); coachEx();
+}
+function urmatorul() {
+  const k = Q.lista.findIndex((_, j) => j > Q.i && Q.rez[j] === undefined);
+  const k2 = k >= 0 ? k : Q.lista.findIndex(( _, j) => Q.rez[j] === undefined);
+  Q.i = k2 >= 0 ? k2 : Q.lista.length;
+  incarcaEx();
 }
 function coachEx(moment) {
   const el = $("#ex-coach"); if (!el || !Q || !Q.e) return;
   const e = Q.e, cine = Q.juc === "w" ? "Albul" : "Negrul";
+  const reluare = Q.reluare;
   let cap = "", corp = "", act = [];
   const sursa = e.sursa === "greseala" ? "Din greșelile tale" : e.sursa === "lichess" ? `Lichess · rating ${e.r}` : `Din partide reale · ≈${e.r}`;
-  if (Q.stare === "arata") { cap = `<b>Pregătește-te</b>`; corp = `<p>${esc(cine)} va fi la mutare după răspunsul adversarului.</p>`; }
+  const reia = `<button class="btn glass" data-a="reia">${ico("sync", 16)}Fă-l din nou</button>`;
+  if (Q.vi != null) {
+    const k = Q.vi, tot = Q.ist.length - 1;
+    cap = `${iconSVG("fo", 24)}<b>Te uiți înapoi</b>`;
+    corp = `<p>${k === 0 ? (e.ult ? "Poziția dinaintea mutării adversarului." : "Poziția de început.") : k === 1 && e.ult ? "După mutarea adversarului: de aici începe exercițiul." : `Pasul ${k} din ${tot}.`} Apasă › sau ⏭ ca să revii${Q.stare === "muta" ? " și să muți" : ""}.</p>`;
+    act.push(`<button class="btn glass verde" data-a="acum">Înapoi la poziția de acum ${ico("last", 16)}</button>`, reia);
+  } else if (Q.stare === "arata") { cap = `<b>Pregătește-te</b>`; corp = `<p>${esc(cine)} va fi la mutare după răspunsul adversarului.</p>`; }
   else if (Q.stare === "gata") {
-    const ok = Q.rez[Q.i];
-    cap = `${iconSVG(ok ? "be" : "in", 24)}<b>${ok ? "Rezolvat!" : "Soluția"}</b>${Q.ultimD ? `<span class="evs ${Q.ultimD > 0 ? "plus" : "minus"}">${Q.ultimD > 0 ? "+" : ""}${Q.ultimD}</span>` : ""}`;
-    corp = `<p>${ok ? "Ai găsit mutarea corectă din prima." : "Data viitoare o găsești. Uită-te la poziție înainte să treci mai departe."}</p>
+    const ok = reluare ? Q.okAcum : Q.rez[Q.i];
+    cap = `${iconSVG(ok ? "be" : "in", 24)}<b>${ok ? (reluare ? "Rezolvat la reluare!" : "Rezolvat!") : "Soluția"}</b>${Q.ultimD ? `<span class="evs ${Q.ultimD > 0 ? "plus" : "minus"}">${Q.ultimD > 0 ? "+" : ""}${Q.ultimD}</span>` : ""}`;
+    corp = `<p>${ok ? (reluare ? "Bine! La reluare ratingul nu se mai schimbă." : "Ai găsit mutarea corectă din prima.") : "Uită-te la poziție cu ‹ și ›, apoi fă exercițiul din nou."}</p>
       <p class="sub">Tema: ${e.teme.filter(t => !["oneMove", "short", "long", "veryLong"].includes(t)).map(temaRo).join(", ") || "tactică"}. ${e.info && e.info.titlu ? esc(e.info.titlu) : ""}</p>`;
-    act.push(`<button class="btn glass verde" data-a="urm">${Q.i + 1 < Q.lista.length ? "Următorul" : "Vezi rezultatul"} ${ico("next", 16)}</button>`);
+    const maiSunt = Q.lista.some((_, j) => Q.rez[j] === undefined);
+    act.push(`<button class="btn glass verde" data-a="urm">${maiSunt ? "Următorul" : "Vezi rezultatul"} ${ico("next", 16)}</button>`, reia);
     if (e.sursa === "greseala") act.push(`<button class="btn glass" data-a="partida">Vezi în partidă</button>`);
     else if (e.info && e.info.url) act.push(`<a class="btn glass" href="${esc(e.info.url)}" target="_blank" rel="noopener">Partida originală ↗</a>`);
   } else {
     cap = moment === "gresit" ? `${iconSVG("bl", 24)}<b>Nu e asta</b>` : moment === "bine" ? `${iconSVG("be", 24)}<b>Corect, continuă</b>` : `<span class="lamut ${Q.juc}"></span><b>${cine} la mutare</b>`;
     corp = `<p>${moment === "gresit" ? "Mutarea nu rezolvă poziția. Mai încearcă." : e.sursa === "greseala" ? `Ai greșit aici în partidă. Găsește cea mai bună mutare.` : e.sol.length > 1 ? "Găsește cea mai bună continuare. Exercițiul are mai multe mutări." : "Găsește cea mai bună mutare."}</p>
-      <p class="sub">${esc(sursa)}${Q.hint ? " · indiciu folosit" : ""}</p>`;
-    act.push(`<button class="btn glass" data-a="indiciu">${Q.hint ? "Arată mutarea" : "Indiciu"}</button>`, `<button class="btn glass" data-a="solutie">Soluția</button>`, `<button class="btn glass" data-a="sari">Sari peste</button>`);
+      <p class="sub">${esc(sursa)}${Q.hint ? " · indiciu folosit" : ""}${reluare ? " · reluare, fără rating" : ""} · cu ‹ vezi ultima mutare a adversarului</p>`;
+    act.push(`<button class="btn glass" data-a="indiciu">${Q.hint ? "Arată mutarea" : "Indiciu"}</button>`, `<button class="btn glass" data-a="solutie">Soluția</button>`, reia, `<button class="btn glass" data-a="sari">Sari peste</button>`);
   }
   el.innerHTML = `<div class="ant-cap">${cap}</div>${corp}${act.length ? `<div class="act">${act.join("")}</div>` : ""}`;
   el.onclick = ev => {
     const b = ev.target.closest("[data-a]"); if (!b) return;
     const a = b.dataset.a;
-    if (a === "urm") { Q.i++; incarcaEx(); }
+    if (a === "urm") urmatorul();
+    if (a === "acum") navEx("last");
+    if (a === "reia") reiaEx();
     if (a === "indiciu" && Q.stare === "muta") arataIndiciu();
     if (a === "solutie" && Q.stare === "muta") arataSolutia();
-    if (a === "sari") { if (Q.rez[Q.i] === undefined) Q.rez[Q.i] = false; Q.i++; incarcaEx(); }
+    if (a === "sari") { if (Q.rez[Q.i] === undefined) Q.rez[Q.i] = false; urmatorul(); }
     if (a === "partida") location.hash = "p-" + e.info.pid;
   };
 }
 function rezumatSesiune() {
   const ok = Q.rez.filter(x => x === true).length, n = Q.lista.length;
   const st = ratingInitial();
-  $("#ex-prog").textContent = "Gata";
+  Q.e = null;
   puncte();
-  T.set({ interactiv: false });
+  T.set({ interactiv: false, arrows: [], hl: [], badge: null });
+  const nav = $("#ex-nav"); if (nav) $$("button", nav).forEach(b => (b.disabled = true));
   const teme = {};
   Q.lista.forEach((e, k) => { if (Q.rez[k] === false) e.teme.forEach(t => { if (!["oneMove", "short", "long", "veryLong", "middlegame", "opening", "endgame", "advantage", "crushing"].includes(t)) teme[t] = (teme[t] || 0) + 1; }); });
   const de = Object.entries(teme).sort((a, b) => b[1] - a[1]).slice(0, 3);
+  const gresite = Q.lista.filter((_, k) => Q.rez[k] === false);
   $("#ex-coach").innerHTML = `<div class="ant-cap">${iconSVG(ok >= n * .7 ? "be" : ok >= n * .4 ? "go" : "in", 24)}<b>${ok} din ${n} rezolvate din prima</b></div>
-    <p>Rating-ul la exerciții: ${Q.ratingStart} → <b>${st.rating}</b> (${Q.dRating >= 0 ? "+" : ""}${Q.dRating}).</p>
+    ${Q.exersare ? `<p>Reluare, fără rating.</p>` : `<p>Rating-ul la exerciții: ${Q.ratingStart} → <b>${st.rating}</b> (${Q.dRating >= 0 ? "+" : ""}${Q.dRating}).</p>`}
     ${de.length ? `<p class="sub">De lucrat: ${de.map(([t]) => temaRo(t)).join(", ")}.</p>` : `<p class="sub">Fără teme cu probleme în setul ăsta.</p>`}
-    <div class="act"><button class="btn glass verde" data-a="iar">${ico("play")}Încă 10${de.length ? " pe temele grele" : ""}</button><button class="btn glass" data-a="ant">Înapoi la antrenor</button></div>`;
+    <p class="sub">Atinge un punct de sus ca să revezi sau să refaci oricare exercițiu.</p>
+    <div class="act">${gresite.length ? `<button class="btn glass verde" data-a="greseli">${ico("sync", 16)}Reia cele ${gresite.length} greșite</button>` : ""}
+      <button class="btn glass ${gresite.length ? "" : "verde"}" data-a="iar">${ico("play")}Încă 10${de.length ? " pe temele grele" : ""}</button><button class="btn glass" data-a="ant">Înapoi la antrenor</button></div>`;
   $("#ex-coach").onclick = async ev => {
     const b = ev.target.closest("[data-a]"); if (!b) return;
     if (b.dataset.a === "ant") location.hash = "antrenor";
+    if (b.dataset.a === "greseli") pornesteSesiune(gresite, "Reluare: exercițiile greșite", true);
     if (b.dataset.a === "iar") pornesteSesiune(await exercitiiPeTeme(de.length ? de.map(x => x[0]) : null, 10), de.length ? "Temele grele" : "Încă 10 exerciții");
   };
 }
@@ -384,7 +468,7 @@ export function randeazaFinal(el, id) {
   startFinal(f);
 }
 function startFinal(f) {
-  F = { f, pos: f.fen, mut: 0, stare: "", oprit: false, istoric: [] };
+  F = { f, pos: f.fen, mut: 0, stare: "", oprit: false, istoric: [], snap: [] };
   T.set({ fen: f.fen, flip: f.eu === "b", hl: [], arrows: [], badge: null, cine: f.eu, interactiv: false });
   if (new Chess(f.fen).turn() !== f.eu) raspunsMotor(); else { F.stare = "muta"; T.set({ interactiv: true }); }
   coachFinal();
@@ -392,6 +476,7 @@ function startFinal(f) {
 function wEu(ev, eu) { return A.winPct(ev, eu); }
 async function mutareFinal(m) {
   if (!F || F.stare !== "muta") return;
+  F.snap.push({ pos: F.pos, mut: F.mut, n: F.istoric.length });
   F.pos = m.fen; F.mut++; F.istoric.push(m.san);
   T.set({ fen: m.fen, hl: [{ sq: m.from, c: "#e8c547", o: .32 }, { sq: m.to, c: "#e8c547", o: .45 }], arrows: [], interactiv: false });
   if (S.set.sunete) sunetMutare(m.san);
@@ -430,22 +515,26 @@ async function raspunsMotor() {
 async function gataFinal(ok, text) {
   F.stare = "gata"; F.ok = ok; F.text = text; T.set({ interactiv: false });
   if (S.set.sunete) setTimeout(ok ? sunetCorect : sunetGresit, 120);
-  if (ok) { S.set.finaluri = { ...(S.set.finaluri || {}), [F.f.id]: true }; const { salveazaSetari } = await import("./date.js?v=32"); salveazaSetari(S.set); }
+  if (ok) { S.set.finaluri = { ...(S.set.finaluri || {}), [F.f.id]: true }; const { salveazaSetari } = await import("./date.js?v=33"); salveazaSetari(S.set); }
   coachFinal();
 }
 function coachFinal() {
   const el = $("#fin-coach"); if (!el || !F) return;
   const f = F.f;
   let cap, corp = `<p>${esc(f.text)}</p>`, act = [];
-  if (F.stare === "gata") { cap = `${iconSVG(F.ok ? "be" : "bl", 24)}<b>${F.ok ? "Reușit!" : "Nereușit"}</b>`; corp += `<p><b>${esc(F.text)}</b></p>`; act.push(`<button class="btn glass verde" data-a="iar">Ia de la capăt</button>`); }
+  if (F.stare === "gata") { cap = `${iconSVG(F.ok ? "be" : "bl", 24)}<b>${F.ok ? "Reușit!" : "Nereușit"}</b>`; corp += `<p><b>${esc(F.text)}</b></p>`; act.push(`<button class="btn glass verde" data-a="iar">Ia de la capăt</button>`); if (F.snap.length) act.push(`<button class="btn glass" data-a="inapoi">${ico("prev", 16)}Înapoi o mutare</button>`); }
   else if (F.stare === "motor") cap = `<span class="spin mic"></span><b>Stockfish se gândește…</b>`;
-  else { cap = `<span class="lamut ${f.eu}"></span><b>Mutarea ta</b>`; act.push(`<button class="btn glass" data-a="indiciu">Indiciu</button>`, `<button class="btn glass" data-a="iar">Ia de la capăt</button>`); }
+  else { cap = `<span class="lamut ${f.eu}"></span><b>Mutarea ta</b>`; act.push(`<button class="btn glass" data-a="indiciu">Indiciu</button>`); if (F.snap.length) act.push(`<button class="btn glass" data-a="inapoi">${ico("prev", 16)}Înapoi o mutare</button>`); act.push(`<button class="btn glass" data-a="iar">Ia de la capăt</button>`); }
   const tinta = f.tinta === "mat" ? `Dă mat în cel mult ${f.maxMut} de mutări.` : f.tinta === "promovare" ? "Promovează pionul păstrând câștigul." : `Ține remiza ${f.maxMut} de mutări.`;
   el.innerHTML = `<div class="ant-cap">${cap}</div>${corp}<div class="ctx"><span>${tinta}</span><span>Mutări: ${F.mut}${f.tinta !== "remiza" ? ` / ${f.maxMut}` : ` / ${f.maxMut}`}</span></div>
     ${F.istoric.length ? `<p class="sub linie-fin">${F.istoric.map(fig).join(" ")}</p>` : ""}${act.length ? `<div class="act">${act.join("")}</div>` : ""}`;
   el.onclick = async ev => {
     const b = ev.target.closest("[data-a]"); if (!b) return;
     if (b.dataset.a === "iar") { F.oprit = true; startFinal(f); }
+    if (b.dataset.a === "inapoi" && F.snap.length && (F.stare === "muta" || F.stare === "gata")) {
+      const x = F.snap.pop(); F.pos = x.pos; F.mut = x.mut; F.istoric.length = x.n; F.stare = "muta"; F.ok = undefined;
+      T.set({ fen: F.pos, hl: [], arrows: [], badge: null, interactiv: true }); coachFinal();
+    }
     if (b.dataset.a === "indiciu" && F.stare === "muta") {
       const r = await evalMotor(F.pos, 14); if (!F || F.stare !== "muta") return;
       if (r.linii.length) T.set({ arrows: [sageata(r.linii[0].pv[0], CULORI.be, .8)] });

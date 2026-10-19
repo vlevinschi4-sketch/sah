@@ -1,12 +1,12 @@
 // app.js — pornirea aplicației, lista partidelor, sincronizarea, analiza în lot, importul și setările.
-import * as A from "./analiza.js?v=32";
-import { S, motoare, culoareaMea, rezultat, analizeaza, inSerie, numeDeschidere } from "./stare.js?v=32";
-import { db, setari, salveazaSetari, sincronizeaza, partidaDinPgn } from "./date.js?v=32";
-import { iconSVG } from "./tabla.js?v=32";
-import { deschideReview, inchideReview, reviewDeschis, reimprospateaza } from "./review.js?v=32";
-import { randeazaAntrenor, randeazaExercitii, randeazaSesiune, randeazaLectie, randeazaFinal, inchideAntrenor } from "./antrenor.js?v=32";
-import { randeazaDeschideri, randeazaLinie, inchideDeschideri } from "./deschideri.js?v=32";
-import { $, $$, esc, af, dataRo, toast, timp, ico } from "./util.js?v=32";
+import * as A from "./analiza.js?v=33";
+import { S, motoare, culoareaMea, rezultat, analizeaza, inSerie, numeDeschidere } from "./stare.js?v=33";
+import { db, setari, salveazaSetari, sincronizeaza, partidaDinPgn } from "./date.js?v=33";
+import { iconSVG } from "./tabla.js?v=33";
+import { deschideReview, inchideReview, reviewDeschis, reimprospateaza } from "./review.js?v=33";
+import { randeazaAntrenor, randeazaExercitii, randeazaSesiune, randeazaLectie, randeazaFinal, inchideAntrenor } from "./antrenor.js?v=33";
+import { randeazaDeschideri, randeazaLinie, inchideDeschideri } from "./deschideri.js?v=33";
+import { $, $$, esc, af, dataRo, toast, timp, ico } from "./util.js?v=33";
 
 // ───────── LISTA PARTIDELOR ─────────
 function ziRo(ts) {
@@ -165,7 +165,7 @@ function deschideSetari() {
     <div class="camp"><span>Antrenorul citește cu voce</span>${da("voce", s.voce)}</div>
     <div class="act"><button class="btn glass primar" id="set-ok">Salvează</button><button class="btn glass" data-inchide>Închide</button></div>
     <div class="pericol"><button class="btn glass rosu" id="set-sterge">Șterge toate datele locale</button><span id="set-conf"></span></div>
-    <p class="nota"><b>Versiunea 3.2.</b> Totul rulează pe dispozitivul tău: Stockfish 19 (GPLv3), chess.js (BSD), deschiderile din setul public Lichess (CC0), piesele cburnett (CC BY-SA). Partidele vin din API-ul public Chess.com.</p>`);
+    <p class="nota"><b>Versiunea 3.3.</b> Totul rulează pe dispozitivul tău: Stockfish 19 (GPLv3), chess.js (BSD), deschiderile din setul public Lichess (CC0), piesele cburnett (CC BY-SA). Partidele vin din API-ul public Chess.com.</p>`);
   $$(".foaie [data-set]").forEach(g => (g.onclick = e => { const b = e.target.closest("button"); if (!b) return; $$("button", g).forEach(x => x.setAttribute("aria-selected", x === b)); }));
   $("#set-ok").onclick = async () => {
     const val = n => $(`.foaie [data-set="${n}"] [aria-selected="true"]`).dataset.v;
@@ -240,7 +240,7 @@ addEventListener("hashchange", ruta);
   $("#h-user").textContent = S.set.user;
   $("#b-setari").onclick = deschideSetari;
   $("#h-acasa").onclick = e => { e.preventDefault(); location.hash = ""; };
-  try { S.teorie = new A.Teorie(await (await fetch("teorie.json?v=32")).json()); }
+  try { S.teorie = new A.Teorie(await (await fetch("teorie.json?v=33")).json()); }
   catch (e) { S.teorie = new A.Teorie({ pozitii: [], nume: {} }); }
   S.partide = await db.toate("partide");
   ruta();

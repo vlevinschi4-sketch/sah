@@ -347,3 +347,12 @@ button, a, .btn, .chip, .mm, .lm, .kn, .row, .seg button, .nav { touch-action:ma
   body.in-partida main { padding-bottom:calc(env(safe-area-inset-bottom,0px) + 100px) }
 }
 @media (max-width:900px) { .nav { background:color-mix(in srgb, var(--surface) 90%, transparent) } }
+
+/* ───────── v3.3: punctele sesiunii devin butoane (revezi sau refaci orice exercițiu) ───────── */
+.puncte { gap:2px }
+.pt { width:30px; height:24px; padding:9px 3px; border:0 !important; background:transparent !important; border-radius:8px; cursor:pointer }
+.pt::before { content:""; display:block; height:6px; border-radius:99px; background:var(--surface-2); box-shadow:inset 0 0 0 1px var(--line) }
+.pt.acum::before { background:var(--accent); box-shadow:none } .pt.ok::before { background:var(--ok); box-shadow:none } .pt.nu::before { background:var(--rau); box-shadow:none }
+.pt.acum.ok::before, .pt.acum.nu::before { outline:2px solid var(--accent); outline-offset:2px }
+.pt[disabled] { cursor:default }
+.nav .btn[disabled] { opacity:.35 }
