@@ -1,10 +1,12 @@
 // tabla.js — tabla de șah în SVG, săgeți, iconițele claselor și bara de evaluare.
 
 export const CULORI = {
-  br: "#1fb9a0", gr: "#6f98c4", be: "#7fb34a", ex: "#7fb34a", go: "#93ad86", bk: "#a8825f",
-  in: "#f0b93a", mi: "#f39a3c", ms: "#f0705c", bl: "#e2443a", fo: "#9a9aa2",
-  rec: "#3f8fe8", am: "#e2443a",
+  br: "#26c2a3", gr: "#749bbf", be: "#81b64c", ex: "#81b64c", go: "#95b776", bk: "#d5a47d",
+  in: "#f7c631", mi: "#ffa459", ms: "#ff7769", bl: "#fa412d", fo: "#95b776",
+  rec: "#4dc3ea", am: "#fa412d", hl: "#ffff33", sageata: "#ffaa00",
 };
+// evidențierea ultimei mutări (galben, ca pe tablele obișnuite) și a mutării analizate (în culoarea clasei)
+export const ultima = (u, c = CULORI.hl, o = .5) => (u ? [{ sq: u.slice(0, 2), c, o: o * .8 }, { sq: u.slice(2, 4), c, o }] : []);
 const FILES = "abcdefgh";
 
 // iconița unei clase, ca SVG (merge și în HTML, și pe tablă)

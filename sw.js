@@ -1,7 +1,7 @@
 // sw.js — păstrează aplicația și motorul pe dispozitiv, ca să meargă și fără internet.
 // Cu internet ia mereu fișierele proaspete (fără cache vechi); fără internet folosește copia salvată.
-const VERSIUNE = "sah-local-v33";
-const FISIERE = ["./", "index.html", "manifest.webmanifest", "analiza.js", "antrenor.js", "app.css", "app.js", "apple-touch-icon.png", "chess.js", "date.js", "deschideri.js", "deschideri.json", "exercitii.json", "icon-192.png", "icon-512-maskable.png", "icon-512.png", "lectii.js", "motor.js", "repertoriu.json", "review.js", "stare.js", "stockfish-19-lite-single.js", "stockfish-19-lite-single.wasm", "sunete.js", "tabla.js", "tablaui.js", "teorie.json", "util.js"];
+const VERSIUNE = "sah-local-v40";
+const FISIERE = ["./", "index.html", "manifest.webmanifest", "analiza.js", "app.css", "app.js", "apple-touch-icon.png", "cadru.js", "chess.js", "cursuri.json", "date.js", "deschideri.js", "deschideri.json", "dezlegari.js", "exercitii.json", "icon-192.png", "icon-512-maskable.png", "icon-512.png", "invata.js", "lectii.js", "mentor.js", "motor.js", "review.js", "stare.js", "statistici.js", "stockfish-19-lite-single.js", "stockfish-19-lite-single.wasm", "sunete.js", "tabla.js", "tablaui.js", "teorie.json", "util.js"];
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(VERSIUNE).then(c => c.addAll(FISIERE)).then(() => self.skipWaiting()));
 });

@@ -1,6 +1,6 @@
 // motor.js — Stockfish 19 (WASM, rulează local în browser) și analiza unei partide
 // cu mai multe motoare în paralel, câte unul pe nucleu liber.
-import { Chess } from "./chess.js?v=33";
+import { Chess } from "./chess.js?v=40";
 
 const URL_MOTOR = new URL("./stockfish-19-lite-single.js", import.meta.url).href;
 

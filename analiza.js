@@ -1,7 +1,7 @@
 // analiza.js — clasificarea mutărilor (ca în Game Review de pe Chess.com), acuratețe,
 // rating estimat și statistici avansate. Primește evaluările brute ale motorului
 // pentru fiecare poziție și întoarce tot ce afișează aplicația.
-import { Chess } from "./chess.js?v=33";
+import { Chess } from "./chess.js?v=40";
 
 export const VAL = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 };
 export const NUME = { p: "pionul", n: "calul", b: "nebunul", r: "turnul", q: "dama", k: "regele" };
@@ -50,29 +50,29 @@ export function evText(ev) {
   const v = (ev.cp / 100).toFixed(1);
   return v === "-0.0" || v === "0.0" ? "0.0" : (ev.cp > 0 ? "+" : "") + v;
 }
-const opus = c => (c === "w" ? "b" : "w");
-const parsUci = u => ({ from: u.slice(0, 2), to: u.slice(2, 4), promotion: u.length > 4 ? u[4] : undefined });
-const eCaptura = m => m.flags.includes("c") || m.flags.includes("e");
-const valoareCapturata = m => (m.flags.includes("e") ? 1 : m.captured ? VAL[m.captured] : 0);
+export const opus = c => (c === "w" ? "b" : "w");
+export const parsUci = u => ({ from: u.slice(0, 2), to: u.slice(2, 4), promotion: u.length > 4 ? u[4] : undefined });
+export const eCaptura = m => m.flags.includes("c") || m.flags.includes("e");
+export const valoareCapturata = m => (m.flags.includes("e") ? 1 : m.captured ? VAL[m.captured] : 0);
 
-function incearca(ch, u) { try { return ch.move(parsUci(u)); } catch (e) { return null; } }
-function sanDin(fen, u) { const ch = new Chess(fen); const m = incearca(ch, u); return m ? m.san : null; }
+export function incearca(ch, u) { try { return ch.move(parsUci(u)); } catch (e) { return null; } }
+export function sanDin(fen, u) { const ch = new Chess(fen); const m = incearca(ch, u); return m ? m.san : null; }
 
-function material(ch, cul) {
+export function material(ch, cul) {
   let s = 0;
   for (const rand of ch.board()) for (const x of rand) if (x && x.color === cul) s += VAL[x.type];
   return s;
 }
-const balanta = (ch, cul) => material(ch, cul) - material(ch, opus(cul));
+export const balanta = (ch, cul) => material(ch, cul) - material(ch, opus(cul));
 
-function piese(ch) {
+export function piese(ch) {
   const out = [];
   for (const rand of ch.board()) for (const x of rand) if (x) out.push(x);
   return out;
 }
 
 // ───────── schimburi (SEE) ─────────
-function capturaMinima(ch, sq) {
+export function capturaMinima(ch, sq) {
   const c = ch.moves({ verbose: true }).filter(m => m.to === sq && eCaptura(m));
   if (!c.length) return null;
   c.sort((a, b) => (VAL[a.piece] - VAL[b.piece]) || ((a.promotion && a.promotion !== "q" ? 1 : 0) - (b.promotion && b.promotion !== "q" ? 1 : 0)));
@@ -89,7 +89,7 @@ export function see(ch, sq, adancime = 0) {
   ch.undo();
   return Math.max(0, v);
 }
-function pieseInPericol(ch, cul, minVal = 1) {
+export function pieseInPericol(ch, cul, minVal = 1) {
   const out = [];
   for (const x of piese(ch)) {
     if (x.color !== cul || x.type === "k" || VAL[x.type] < minVal) continue;
@@ -100,7 +100,7 @@ function pieseInPericol(ch, cul, minVal = 1) {
   out.sort((a, b) => b[2] - a[2]);
   return out;
 }
-function deltaMaterialPv(fen, pv, cul, maxPlies = 10) {
+export function deltaMaterialPv(fen, pv, cul, maxPlies = 10) {
   const ch = new Chess(fen);
   const puncte = [balanta(ch, cul)], jucate = [];
   for (const u of pv.slice(0, maxPlies)) {
@@ -115,7 +115,7 @@ function deltaMaterialPv(fen, pv, cul, maxPlies = 10) {
   }
   return puncte[puncte.length - 1];
 }
-function rasturnat(fen) {
+export function rasturnat(fen) {
   const p = fen.split(" ");
   p[1] = p[1] === "w" ? "b" : "w"; p[3] = "-";
   try { return new Chess(p.join(" "), { skipValidation: true }); } catch (e) { return null; }
@@ -159,7 +159,7 @@ function randRar(ch) {
   const alb = b[7].filter(x => x && x.color === "w").length, neg = b[0].filter(x => x && x.color === "b").length;
   return alb < 4 || neg < 4;
 }
-function calculeazaFaze(fens) {
+export function calculeazaFaze(fens) {
   const faze = []; let stare = "deschidere";
   fens.forEach((f, i) => {
     const ch = new Chess(f), mm = numaraPiese(ch);
@@ -187,7 +187,7 @@ export function citestePgn(pgn) {
 }
 
 // ───────── clasificare ─────────
-function linie(fen, ucis, n = 6) {
+export function linie(fen, ucis, n = 6) {
   const ch = new Chess(fen), out = [];
   for (const u of (ucis || []).slice(0, n)) {
     const m = incearca(ch, u);
@@ -196,7 +196,7 @@ function linie(fen, ucis, n = 6) {
   }
   return out;
 }
-function eSacrificiu(fenB, m, fenA, cul) {
+export function eSacrificiu(fenB, m, fenA, cul) {
   const before = new Chess(fenB);
   if (m.promotion || before.inCheck()) return false;
   const luat = valoareCapturata(m);
@@ -221,7 +221,7 @@ function seePentruAdversar(fen, sq) {
   if (!b || b.inCheck()) return 0;
   return see(b, sq);
 }
-function mutareEvidenta(fenB, m, prev) {
+export function mutareEvidenta(fenB, m, prev) {
   const before = new Chess(fenB);
   if (prev && eCaptura(m) && m.to === prev.to) return true;
   if (eCaptura(m)) {
